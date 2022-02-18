@@ -1,0 +1,21 @@
+dependencies:
+  - "OpenZeppelin/openzeppelin-contracts@4.5.0"
+
+compiler:
+  solc:
+    remappings:
+      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.5.0"
+
+networks:
+  development:
+    vault: "0xA66F90C0B7be6955D6c8f9B16dfD0A56171e038e"
+    fee: 300
+    verify: False
+  rinkeby:
+    vault: "0xA66F90C0B7be6955D6c8f9B16dfD0A56171e038e"
+    fee: 300
+    verify: True
+    
+dotenv: .env
+wallets:
+  from_key: ${PRIVATE_KEY}
