@@ -31,7 +31,8 @@ contract AceBank is AccessControl {
     /// @return The balance remaining for the user
     function withdraw(uint256 _amount) public returns(uint256) {
         // require: only those who have deposited
-        require(balances[msg.sender] >= _amount, "Insufficient balance");
+        // Do users need a role before withdrawing? 
+        require(balances[msg.sender] >= _amount, "withdraw: Insufficient balance");
         balances[msg.sender] -= _amount;
         uint fees = _amount * (fee) / PERCENTAGE_PRECISION ;
         uint256 required_amount = _amount - fees;
@@ -39,10 +40,8 @@ contract AceBank is AccessControl {
         payable(Vault).transfer(fees);
         
         return balances[msg.sender];
-        //think on how to send token, rn the contract has no token
-        // maybe make it payable ??
+        
         //also think of adding an a destination address to withdraw to (security reasons?)
-        // create a vault of which some fee will be allocated to while withdrawing
     }
 
     
@@ -54,8 +53,18 @@ contract AceBank is AccessControl {
         fee = _fee;
         emit AceUpdated(_address, _fee);
     }
-    // think of a function to change the fee
-    //think of a function to changes the vault
+
+    function grantAdminRole(address _address) external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "grantAdminRole: Admin Permissions Required");
+        require(_address != address(0) && _address != address(this), "Invalid address");
+        _grantRole(DEFAULT_ADMIN_ROLE, _address);
+    }
+    
+
+    // think of loan functionalities
+    // interest rates 
+    // pause functionalities
+    // emergency exit
     
 
 
