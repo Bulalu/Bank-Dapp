@@ -1,55 +1,76 @@
 pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+
+/**
+* @title Ace Bank:
+*     
+*        
+*                    ██╗░█████╗░░█████╗░███╗░░██╗██╗░█████╗░  ░█████╗░░█████╗░███████╗
+*                    ██║██╔══██╗██╔══██╗████╗░██║██║██╔══██╗  ██╔══██╗██╔══██╗██╔════╝
+*                    ██║██║░░╚═╝██║░░██║██╔██╗██║██║██║░░╚═╝  ███████║██║░░╚═╝█████╗░░
+*                    ██║██║░░██╗██║░░██║██║╚████║██║██║░░██╗  ██╔══██║██║░░██╗██╔══╝░░
+*                    ██║╚█████╔╝╚█████╔╝██║░╚███║██║╚█████╔╝  ██║░░██║╚█████╔╝███████╗
+*                    ╚═╝░╚════╝░░╚════╝░╚═╝░░╚══╝╚═╝░╚════╝░  ╚═╝░░╚═╝░╚════╝░╚══════╝
+
+*/
 contract AceBank is AccessControl {
-    // deposit
-    // withdraw
-    // loans
-    // security
+    
     mapping(address => uint256) public balances;
-    //5 percent
-    bytes32 public constant MY_ROLE = keccak256("MY_ROLE");
+    
+    bytes32 public constant ACE_ROLE = keccak256("ACE_ROLE");
     uint256 private constant MULTIPLIER_PRECISION = 1e18;
     uint256 private constant PERCENTAGE_PRECISION = 10000;
     uint256 private fee;
-    address  private Vault; // 0x807c47A89F720fe4Ee9b8343c286Fc886f43191b; //account no 5
+    address payable private  vault; // 0x807c47A89F720fe4Ee9b8343c286Fc886f43191b; //account no 5
     
     event Deposited(address indexed depositer, uint256 amount_deposited);
     event AceUpdated(address indexed vault, uint256 _fee);
-    constructor(address _vault, uint256 _fee) {
+    event WithDrawn (address indexed withdrawer, uint256 amount);
+    constructor(address  payable _vault, uint256 _fee) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         fee = _fee;
-        Vault = _vault;
+        vault = _vault;
     }
     function deposit() public payable returns(uint256){
         balances[msg.sender] += msg.value;
         emit Deposited(msg.sender, msg.value);
+        grantAceRole(msg.sender);
         return balances[msg.sender];
+
     }
 
     /// @notice Withdraw ether from bank
     /// @return The balance remaining for the user
     function withdraw(uint256 _amount) public returns(uint256) {
-        // require: only those who have deposited
-        // Do users need a role before withdrawing? 
+        require(checkAceRole(msg.sender), "You are not a member of the Ace Bank");
         require(balances[msg.sender] >= _amount, "withdraw: Insufficient balance");
         balances[msg.sender] -= _amount;
         uint fees = _amount * (fee) / PERCENTAGE_PRECISION ;
         uint256 required_amount = _amount - fees;
-        payable(msg.sender).transfer(required_amount);
-        payable(Vault).transfer(fees);
+        (bool success,) = msg.sender.call{value:required_amount}("");
+        (bool vault_success,) = vault.call{value:fees}("");
+        require(success && vault_success, "Transaction Failed");
+
         
         return balances[msg.sender];
         
-        //also think of adding an a destination address to withdraw to (security reasons?)
     }
+    /// @notice Users must have the ACE role for them to withdraw funds
+     function grantAceRole(address _address) private {
+         _grantRole(ACE_ROLE, _address);
+     }
 
+     function revokeAceRole(address _address) private {
+         _grantRole(ACE_ROLE, _address);
+     }
     
-    function updateAce(address _address, uint256 _fee) external {
+    
+    function updateAce(address  payable _address, uint256 _fee) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "updateAce: Admin Permissions Required");
         require(_address != address(0) && _address != address(this), "Invalid Vault address");
         require(_fee < 10000); // dev: feePercentage greater than 10000 (100.00%)
-        Vault = _address;
+        vault = _address;
         fee = _fee;
         emit AceUpdated(_address, _fee);
     }
@@ -60,16 +81,13 @@ contract AceBank is AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, _address);
     }
     
-
-    // think of loan functionalities
-    // interest rates 
-    // pause functionalities
-    // emergency exit
     
-
-
     function checkAdminRole(address _address) public view returns(bool) {
         return hasRole(DEFAULT_ADMIN_ROLE, _address);
+    }
+
+    function checkAceRole(address _address) public view returns(bool) {
+        return hasRole(ACE_ROLE, _address);
     }
 
     

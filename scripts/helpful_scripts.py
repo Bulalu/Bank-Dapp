@@ -3,7 +3,7 @@ from web3 import Web3
 
 LOCAL_BLOCKCHAIN_ENVIRONMENTS = ["hardhat", "development", "ganache", "mainnet-fork"]
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
-
+TENPOW18 = 10 ** 18
 
 def get_account(index=None, id=None):
     if index:

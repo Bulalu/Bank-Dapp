@@ -10,7 +10,7 @@ def isolation(fn_isolation):
     pass
 
 
-@pytest.fixture(scope="module", autouse=True)
+
 
 def test_deposit_and_withdraw(): 
     vault = accounts[5]
@@ -25,7 +25,7 @@ def test_deposit_and_withdraw():
     depositer_balance_before_deposit = depositor.balance()
     print("Depositer balance before", depositer_balance_before_deposit)
     acebank.updateAce(vault, fee, {"from": get_account()})
-    
+    print("ACE ROLE before deposit",acebank.checkAceRole(depositor))
     #deposit
     acebank.deposit({"from":depositor, "value":amount})
     bank_balance_after_deposit = bank_balance_before_deposit + amount
@@ -34,10 +34,13 @@ def test_deposit_and_withdraw():
     assert acebank.balance() == bank_balance_after_deposit
     assert depositor.balance() == depositer_balance_after_deposit
     assert acebank.balances(depositor.address) == amount
-    
+    print("ACE ROLE after deopist",acebank.checkAceRole(depositor))
+   
     # #withdraw
-    with brownie.reverts("withdraw: Insufficient balance"):
+    with brownie.reverts("You are not a member of the Ace Bank"):
         acebank.withdraw(amount, {"from":bob})
+    with brownie.reverts("withdraw: Insufficient balance"):
+        acebank.withdraw(amount * 2, {"from":depositor})
     print("Depositer balance b4 withdrawing", depositor.balance()) 
     print(acebank.balances(depositor.address) == amount) 
     with brownie.reverts("withdraw: Insufficient balance"):
@@ -46,6 +49,7 @@ def test_deposit_and_withdraw():
     ace_balance_depositer = acebank.balances(depositor.address)
     vault_balance_before = vault.balance()
     
+    print("ACE ROLE",acebank.checkAceRole(depositor))
     acebank.withdraw(amount, {"from":depositor})
     assert acebank.balances(depositor.address) == ace_balance_depositer - amount
     #do math on fee and the amount to send
@@ -60,15 +64,15 @@ def test_deposit_and_withdraw():
 def test_access_role():
     account = accounts[0]
     bob = accounts[2]
-    vault = accounts[5]
+    
     acebank = deploy_ace_bank()
-    amount = "20 ether"
+    
     assert acebank.checkAdminRole(account) == True
     assert acebank.checkAdminRole(bob) == False
 
 def test_update_ace():
     vault = accounts[3]
-    fee = 500 #5%
+    fee = 300 #5%
     owner = get_account()
     bob = accounts[2]
 
